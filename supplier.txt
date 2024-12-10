@@ -1,0 +1,3 @@
+001,Supplier A,123-456-7890,Product1:2024-01-01|Product2:2024-02-01
+002,Supplier B,987-654-3210,Product3:2024-03-01
+003,Supplier C,555-555-5555,Product4:2024-04-01|Product5:2024-05-01
