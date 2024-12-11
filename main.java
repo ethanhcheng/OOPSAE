@@ -10,6 +10,8 @@ public class main extends JFrame {
         JLabel label = new JLabel("Select User Type:");
         JButton workerButton = new JButton("Worker");
         JButton customerButton = new JButton("Customer");
+        
+        String folderPath= "../files";
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -20,7 +22,7 @@ public class main extends JFrame {
         panel.add(customerButton);
 
         workerButton.addActionListener(e -> new Worker.workerlogin());
-        customerButton.addActionListener(e -> new Customer.customer());
+        customerButton.addActionListener(e -> new Customer.customer(folderPath));
 
         add(panel);
         setVisible(true);
