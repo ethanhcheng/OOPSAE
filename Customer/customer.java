@@ -1,7 +1,6 @@
 package Customer;
 
 import javax.swing.*;
-import java.io.File;
 
 public class customer extends JFrame {
     public customer(String folderPath) {
@@ -12,8 +11,7 @@ public class customer extends JFrame {
 
         JLabel label = new JLabel("Select an Action:");
         JButton createOrderButton = new JButton("Create New Order");
-        JButton modifyOrderButton = new JButton("Modify Existing Order");
-        JButton trackOrderButton = new JButton("Track Order Status");
+        JButton viewOrderButton = new JButton("View Orders");
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -21,13 +19,10 @@ public class customer extends JFrame {
         panel.add(Box.createVerticalStrut(20));
         panel.add(createOrderButton);
         panel.add(Box.createVerticalStrut(10));
-        panel.add(modifyOrderButton);
-        panel.add(Box.createVerticalStrut(10));
-        panel.add(trackOrderButton);
+        panel.add(viewOrderButton);
 
         createOrderButton.addActionListener(e -> new CustomerInterface(folderPath, "create"));
-        modifyOrderButton.addActionListener(e -> new CustomerInterface(folderPath, "modify"));
-        trackOrderButton.addActionListener(e -> new CustomerInterface(folderPath, "track"));
+        viewOrderButton.addActionListener(e -> new CustomerInterface(folderPath, "view"));
 
         add(panel);
         setVisible(true);
