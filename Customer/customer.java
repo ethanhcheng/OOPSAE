@@ -22,8 +22,15 @@ public class customer extends JFrame {
         panel.add(Box.createVerticalStrut(10));
         panel.add(viewOrderButton);
 
-        createOrderButton.addActionListener(e -> new CustomerInterface("..", "create"));
-        viewOrderButton.addActionListener(e -> new CustomerInterface("..", "view"));
+        createOrderButton.addActionListener(e -> {
+            customer.this.dispose();
+            new CustomerInterface("..", "create");
+            });
+        viewOrderButton.addActionListener(e -> {
+            customer.this.dispose();
+            new CustomerInterface("..", "view");
+            });
+            
 
         add(panel);
         setVisible(true);
