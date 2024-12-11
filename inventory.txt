@@ -1,3 +1,5 @@
-4838,fruits,4,aisle 20,minutemaid
-4567,test2,7,aisle 10,dole
-12345,test product,6,aisle b,tropicana
+001,apples,6,A01,01
+002,peaches,7,A02,01
+003,oranges,6,A03,01
+004,milk,3,B01,02
+005,candy,5,C01,03
