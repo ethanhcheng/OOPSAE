@@ -1,6 +1,7 @@
 package Customer;
 
 import javax.swing.*;
+import Customer.CustomerInterface;
 
 public class customer extends JFrame {
     public customer(String folderPath) {
@@ -21,8 +22,8 @@ public class customer extends JFrame {
         panel.add(Box.createVerticalStrut(10));
         panel.add(viewOrderButton);
 
-        createOrderButton.addActionListener(e -> new CustomerInterface(folderPath, "create"));
-        viewOrderButton.addActionListener(e -> new CustomerInterface(folderPath, "view"));
+        createOrderButton.addActionListener(e -> new CustomerInterface("../files", "create"));
+        viewOrderButton.addActionListener(e -> new CustomerInterface("../files", "view"));
 
         add(panel);
         setVisible(true);
