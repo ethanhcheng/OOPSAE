@@ -9,7 +9,7 @@ public class worker extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        JLabel label = new JLabel("Worker Interface");
+        JLabel label = new JLabel("Select Worker Interface:");
         JButton inventoryManagerButton = new JButton("Inventory Manager");
         JButton stockClerkButton = new JButton("Stock Clerk");
 

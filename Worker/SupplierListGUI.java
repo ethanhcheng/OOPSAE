@@ -14,7 +14,7 @@ public class SupplierListGUI extends JFrame {
 
     public SupplierListGUI() {
         setTitle("Supplier List");
-        setSize(800, 500);
+        setSize(900, 500);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -25,7 +25,17 @@ public class SupplierListGUI extends JFrame {
         // Table setup
         tableModel = new DefaultTableModel(data, columns);
         table = new JTable(tableModel);
+
+        // Adjust column widths
+        table.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID column
+        table.getColumnModel().getColumn(1).setPreferredWidth(100); // Name column
+        table.getColumnModel().getColumn(2).setPreferredWidth(150); // Contact Info column
+        table.getColumnModel().getColumn(3).setPreferredWidth(600); // Order Details column
+
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF); // Disable auto-resizing to preserve column widths
+
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
         // Order placement panel
         JPanel orderPanel = new JPanel(new GridLayout(5, 2, 5, 5));
@@ -44,7 +54,7 @@ public class SupplierListGUI extends JFrame {
         orderPanel.add(nameField);
         orderPanel.add(new JLabel("Contact Info (if new):"));
         orderPanel.add(contactField);
-        orderPanel.add(new JLabel("Order Details:"));
+        orderPanel.add(new JLabel("Order Details (follow the format 'product name:YYYY-MM-DD'):"));
         orderPanel.add(orderDetailsField);
 
         JButton placeOrderButton = new JButton("Place Order");
