@@ -28,7 +28,7 @@ public class InventoryManager extends JFrame {
     public InventoryManager() {
         setTitle("Inventory Manager");
         setSize(400, 200);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
         // Main Panel
