@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
-import Worker.Product;
 
 public class CustomerInterface extends JFrame {
     private final File stockFile;
@@ -39,10 +39,13 @@ public class CustomerInterface extends JFrame {
         JTextArea stockArea = new JTextArea();
         stockArea.setEditable(false);
 
+        // Load stock and display only ID, Name, Quantity
         List<Product> stockList = loadStockFromFile();
         StringBuilder stockText = new StringBuilder("Available Products:\nID, Name, Quantity\n");
         for (Product product : stockList) {
-            stockText.append(product.getId()).append(", ").append(product.getName()).append(", ").append(product.getQuantity()).append("\n");
+            stockText.append(product.getId()).append(", ")
+                     .append(product.getName()).append(", ")
+                     .append(product.getQuantity()).append("\n");
         }
         stockArea.setText(stockText.toString());
         panel.add(new JScrollPane(stockArea), BorderLayout.CENTER);
@@ -66,24 +69,30 @@ public class CustomerInterface extends JFrame {
 
         backButton.addActionListener(e -> {
             createOrderFrame.dispose();
-            CustomerInterface.this.dispose();
-            new customer(folderPath);
+            new customer(folderPath); // Replace with appropriate return behavior
         });
 
         submitButton.addActionListener(e -> {
-            String productId = productIdField.getText();
-            int quantity = Integer.parseInt(quantityField.getText());
+            String productId = productIdField.getText().trim();
+            int quantity;
 
+            try {
+                quantity = Integer.parseInt(quantityField.getText().trim());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(createOrderFrame, "Please enter a valid quantity.");
+                return;
+            }
+
+            // Find product by ID
             Product product = stockList.stream()
                     .filter(p -> p.getId().equals(productId))
                     .findFirst()
                     .orElse(null);
 
             if (product != null && product.getQuantity() >= quantity) {
-                product.setQuantity(product.getQuantity() - quantity);
-                saveStockToFile(stockList);
-                appendOrderToFile(new Order(productId, quantity));
-                appendStatusToFile(productId, quantity);
+                String orderId = generateOrderId();
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                appendOrderToFile(new Order(orderId, productId, quantity, timestamp));
 
                 JOptionPane.showMessageDialog(createOrderFrame, "Order Created Successfully!");
                 createOrderFrame.dispose();
@@ -96,6 +105,7 @@ public class CustomerInterface extends JFrame {
         createOrderFrame.add(panel);
         createOrderFrame.setVisible(true);
     }
+
 
     private void openViewOrderDialog() {
         JFrame viewOrderFrame = new JFrame("View All Orders");
@@ -144,7 +154,6 @@ public class CustomerInterface extends JFrame {
 
         backButton.addActionListener(e -> {
             viewOrderFrame.dispose();
-            CustomerInterface.this.dispose();
             new customer(folderPath);
         });
 
@@ -242,20 +251,11 @@ public class CustomerInterface extends JFrame {
 
     private void cancelOrder(String orderId) {
         List<Order> orders = loadOrdersFromFile();
-        List<Product> stockList = loadStockFromFile();
 
-        for (Order order : orders) {
-            if (order.toString().startsWith(orderId)) {
-                Product product = stockList.stream()
-                        .filter(p -> p.getId().equals(order.getProductId()))
-                        .findFirst()
-                        .orElse(null);
-                if (product != null) {
-                    product.setQuantity(product.getQuantity() + order.getQuantity());
-                }
-            }
-        }
-        saveStockToFile(stockList);
+        // Remove the order with the matching ID
+        orders.removeIf(order -> order.toString().startsWith(orderId));
+
+        // Save the updated orders back to order_list.txt
         saveOrdersToFile(orders);
     }
 
@@ -265,7 +265,10 @@ public class CustomerInterface extends JFrame {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                orders.add(new Order(parts[0], Integer.parseInt(parts[1])));
+                // Ensure the line has all required fields
+                if (parts.length == 4) {
+                    orders.add(new Order(parts[0], parts[1], Integer.parseInt(parts[2]), parts[3]));
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -273,30 +276,33 @@ public class CustomerInterface extends JFrame {
         return orders;
     }
 
+    
     private List<Product> loadStockFromFile() {
         List<Product> stockList = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(stockFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
+                // Split the line by commas
                 String[] parts = line.split(",");
-                stockList.add(new Product(parts[0], parts[1], Integer.parseInt(parts[2]), parts[3], parts[4]));
+                // Ensure there are at least three columns: ID, Name, Quantity
+                if (parts.length >= 3) {
+                    String id = parts[0].trim();
+                    String name = parts[1].trim();
+                    int quantity = Integer.parseInt(parts[2].trim());
+                    // Add a Product object with only the first three columns
+                    stockList.add(new Product(id, name, quantity));
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid number format in inventory file. Please check the file.");
         }
         return stockList;
     }
 
-    private void saveStockToFile(List<Product> stockList) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(stockFile))) {
-            for (Product product : stockList) {
-                writer.write(product.toString());
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+
+
 
     private void saveOrdersToFile(List<Order> orders) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(orderFile))) {
@@ -311,44 +317,20 @@ public class CustomerInterface extends JFrame {
 
     private void appendOrderToFile(Order order) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(orderFile, true))) {
-            writer.write(order.toString());
-            writer.newLine();
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            writer.write(String.format("%s,%s,%d,%s%n", order.getOrderId(), order.getProductId(), order.getQuantity(), timestamp));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void appendStatusToFile(String productId, int quantity) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(statusFile, true))) {
-            String orderId = generateOrderId();
-            String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            writer.write(String.format("%s,%s,%d,placed,%s%n", orderId, productId, quantity, dateTime));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private String generateOrderId() {
-        File orderIdFile = new File(folderPath, "order_id.txt");
-        int orderId = 1;
-
-        if (orderIdFile.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(orderIdFile))) {
-                String lastOrderId = reader.readLine();
-                if (lastOrderId != null) {
-                    orderId = Integer.parseInt(lastOrderId) + 1;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(orderIdFile))) {
-            writer.write(String.valueOf(orderId));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // Generate a random three-digit number
+        Random random = new Random();
+        int orderId = 100 + random.nextInt(900); // Ensures a number between 100 and 999
 
         return String.format("%03d", orderId);
     }
+
 }
