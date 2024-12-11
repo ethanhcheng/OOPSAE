@@ -28,4 +28,8 @@ public class customer extends JFrame {
         add(panel);
         setVisible(true);
     }
+    public static void main(String[] args) {
+        String folderPath = "../files";
+        SwingUtilities.invokeLater(() -> new customer(folderPath));
+    }
 }
