@@ -1,5 +1,5 @@
-001,apples,5,A01,01
-002,peaches,7,A02,01
+001,apples,7,A01,01
+002,peaches,10,A02,01
 003,oranges,6,A03,01
 004,milk,3,B01,02
 005,candy,5,C01,03

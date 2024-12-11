@@ -66,6 +66,7 @@ public class CustomerInterface extends JFrame {
 
         backButton.addActionListener(e -> {
             createOrderFrame.dispose();
+            CustomerInterface.this.dispose();
             new customer(folderPath);
         });
 
@@ -143,6 +144,7 @@ public class CustomerInterface extends JFrame {
 
         backButton.addActionListener(e -> {
             viewOrderFrame.dispose();
+            CustomerInterface.this.dispose();
             new customer(folderPath);
         });
 
