@@ -18,9 +18,9 @@ public class CustomerInterface extends JFrame {
 
     public CustomerInterface(String folderPath, String mode) {
         this.folderPath = folderPath;
-        this.stockFile = new File("../files/inventory.txt");
-        this.orderFile = new File("../files/order_list.txt");
-        this.statusFile = new File("../files/Status.txt");
+        this.stockFile = new File("inventory.txt");
+        this.orderFile = new File("order_list.txt");
+        this.statusFile = new File("Status.txt");
 
         if ("create".equalsIgnoreCase(mode)) {
             openCreateOrderDialog();
@@ -106,11 +106,24 @@ public class CustomerInterface extends JFrame {
         orderArea.setEditable(false);
 
         StringBuilder orderText = new StringBuilder("Current Orders:\n");
-        List<Order> orderList = loadOrdersFromFile();
-        for (Order order : orderList) {
-            orderText.append(order).append("\n");
+        // Check if the order file exists
+        if (!orderFile.exists()) {
+            orderText.append("No orders have been created yet.");
+        } else {
+            List<Order> orderList = loadOrdersFromFile();
+            if (orderList.isEmpty()) {
+                orderText.append("No orders have been created yet.");
+            } else {
+                for (Order order : orderList) {
+                    orderText.append(order).append("\n");
+                }
+            }
         }
+        
         orderArea.setText(orderText.toString());
+        orderArea.revalidate();
+        orderArea.repaint();
+
 
         JLabel orderIdLabel = new JLabel("Enter Order ID:");
         JTextField orderIdField = new JTextField();
