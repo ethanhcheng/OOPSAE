@@ -38,7 +38,7 @@ public class StockClerk extends JFrame {
 
         // Button actions
         productRegistrationButton.addActionListener(e -> new ProductRegistrationGUI());
-        pickingItemsButton.addActionListener(e -> new PickingItemsGUI());
+        pickingItemsButton.addActionListener(e -> new PickOrder());
 
         // Set visibility
         setVisible(true);

@@ -1,53 +1,78 @@
 package Worker;
 
-import javax.swing.*;
-import java.awt.*;
+import java.io.*;
+import java.nio.file.*;
+import java.util.ArrayList;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 
 public class PickOrder extends JFrame {
-    public PickOrder(List<Product> stockList, List<InventoryHistory> inventoryHistory) {
-        setTitle("Pick Order");
-        setSize(400, 300);
+    private static final String PICKING_LIST_PATH = "picking_list.txt";
+    private static final String INVENTORY_LIST_PATH = "inventory.txt";
+
+    private static final String[] PICKING_LIST_COLUMNS = {
+        "Customer ID", "Product ID", "Quantity", "Order Date and Time"
+    };
+
+    private static final String[] INVENTORY_LIST_COLUMNS = {
+        "Product ID", "Product Name", "Quantity", "Location", "Supplier ID"
+    };
+
+    public PickOrder() {
+        setTitle("Inventory and Picking List");
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        JLabel orderIdLabel = new JLabel("Order ID:");
-        JTextField orderIdField = new JTextField(15);
-        JLabel productIdLabel = new JLabel("Product ID:");
-        JTextField productIdField = new JTextField(15);
-        JLabel quantityLabel = new JLabel("Quantity:");
-        JTextField quantityField = new JTextField(15);
-        JButton submitButton = new JButton("Submit");
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
-        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
-        panel.add(orderIdLabel); panel.add(orderIdField);
-        panel.add(productIdLabel); panel.add(productIdField);
-        panel.add(quantityLabel); panel.add(quantityField);
-        panel.add(new JLabel()); panel.add(submitButton);
+        JTable pickingListTable = createTableFromFile(PICKING_LIST_PATH, PICKING_LIST_COLUMNS, "Picking List");
+        JTable inventoryListTable = createTableFromFile(INVENTORY_LIST_PATH, INVENTORY_LIST_COLUMNS, "Inventory List");
 
-        submitButton.addActionListener(e -> {
-            String orderId = orderIdField.getText();
-            String productId = productIdField.getText();
-            int quantity = Integer.parseInt(quantityField.getText());
+        JScrollPane pickingListScrollPane = new JScrollPane(pickingListTable);
+        pickingListScrollPane.setBorder(BorderFactory.createTitledBorder("Picking List"));
 
-            Product product = stockList.stream()
-                    .filter(p -> p.getId().equals(productId))
-                    .findFirst()
-                    .orElse(null);
+        JScrollPane inventoryListScrollPane = new JScrollPane(inventoryListTable);
+        inventoryListScrollPane.setBorder(BorderFactory.createTitledBorder("Inventory List"));
 
-            if (product != null && product.getQuantity() >= quantity) {
-                product.setQuantity(product.getQuantity() - quantity);
-                inventoryHistory.add(new InventoryHistory(productId, "Removed", quantity));
+        mainPanel.add(pickingListScrollPane);
+        mainPanel.add(inventoryListScrollPane);
 
-                JOptionPane.showMessageDialog(this, "Order Picked Successfully!");
-            } else {
-                JOptionPane.showMessageDialog(this, "Insufficient Stock or Invalid Product ID!");
-            }
-            dispose();
-        });
+        add(mainPanel);
 
-        add(panel);
         setVisible(true);
     }
-}
 
+    private JTable createTableFromFile(String filePath, String[] predefinedColumns, String tableName) {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(filePath));
+            
+            DefaultTableModel model = new DefaultTableModel(predefinedColumns, 0);
+            
+            if (lines.isEmpty()) {
+                return new JTable(model);
+            }
+            
+            for (String line : lines) {
+                String[] rowData = line.split(",");
+                model.addRow(rowData);
+            }
+            
+            return new JTable(model);
+            
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this,
+                "Error reading " + tableName + ": " + e.getMessage(),
+                "File Read Error",
+                JOptionPane.ERROR_MESSAGE);
+            return new JTable();
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new PickOrder());
+    }
+}
