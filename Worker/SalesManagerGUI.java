@@ -112,13 +112,15 @@ public class SalesManagerGUI extends JFrame {
             return;
         }
 
+        List<String> remainingOrders = new ArrayList<>();
+
         try (BufferedReader reader = new BufferedReader(new FileReader(orderListFile));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(pickingListFile, true))) {
+             BufferedWriter pickingWriter = new BufferedWriter(new FileWriter(pickingListFile, true))) {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                writer.write(line);
-                writer.newLine();
+                pickingWriter.write(line);
+                pickingWriter.newLine();
             }
 
             JOptionPane.showMessageDialog(parentFrame, "Daily picking list generated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
@@ -126,8 +128,20 @@ public class SalesManagerGUI extends JFrame {
         } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(parentFrame, "An error occurred while generating the picking list.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(orderListFile))) {
+            for (String order : remainingOrders) {
+                writer.write(order);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(parentFrame, "An error occurred while updating the order list.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+
 
     private List<String> loadFileContent(File file) {
         List<String> lines = new ArrayList<>();

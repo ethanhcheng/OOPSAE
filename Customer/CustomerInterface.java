@@ -112,33 +112,18 @@ public class CustomerInterface extends JFrame {
         viewOrderFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         viewOrderFrame.setLocationRelativeTo(null);
 
+        // Define column names
         String[] orderColumns = {"Order ID", "Product ID", "Product Name", "Quantity", "Order Date"};
-
         DefaultTableModel orderTableModel = new DefaultTableModel(orderColumns, 0);
         JTable orderTable = new JTable(orderTableModel);
 
-        List<Order> orderList = loadOrdersFromFile();
-        List<Product> stockList = loadStockFromFile();
-        for (Order order : orderList) {
-            String productId = order.getProductId();
-            String productName = stockList.stream()
-                                          .filter(p -> p.getId().equals(productId))
-                                          .map(Product::getName)
-                                          .findFirst()
-                                          .orElse("Unknown Product");
-
-            orderTableModel.addRow(new Object[]{
-                order.getOrderId(),
-                productId,
-                productName,
-                order.getQuantity(),
-                order.getTimestamp()
-            });
-        }
+        // Populate the table with orders
+        updateOrderTableModel(orderTableModel, loadOrdersFromFile());
 
         JScrollPane orderScrollPane = new JScrollPane(orderTable);
         orderScrollPane.setBorder(BorderFactory.createTitledBorder("Order List"));
 
+        // Input Panel
         JPanel inputPanel = new JPanel(new GridLayout(1, 3, 10, 10));
         JTextField orderIdField = new JTextField();
         JButton modifyButton = new JButton("Modify Order");
@@ -155,7 +140,7 @@ public class CustomerInterface extends JFrame {
                 JOptionPane.showMessageDialog(viewOrderFrame, "Please enter a valid Order ID.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            openModifyOrderDialog(orderId, viewOrderFrame);
+            openModifyOrderDialog(orderId, viewOrderFrame, orderTableModel);
         });
 
         trackButton.addActionListener(e -> {
@@ -170,9 +155,10 @@ public class CustomerInterface extends JFrame {
         JButton backButton = new JButton("Back");
         backButton.addActionListener(e -> {
             viewOrderFrame.dispose();
-            new customer(folderPath);
+            new CustomerInterface(folderPath, "create");
         });
 
+        // Main Panel
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(orderScrollPane, BorderLayout.CENTER);
         mainPanel.add(inputPanel, BorderLayout.SOUTH);
@@ -182,126 +168,107 @@ public class CustomerInterface extends JFrame {
         viewOrderFrame.setVisible(true);
     }
 
-        
-        orderArea.setText(orderText.toString());
-        orderArea.revalidate();
-        orderArea.repaint();
 
 
-        JLabel orderIdLabel = new JLabel("Enter Order ID:");
-        JTextField orderIdField = new JTextField();
-        JButton modifyButton = new JButton("Modify Order");
-        JButton trackButton = new JButton("Track Order");
+    private void openModifyOrderDialog(String orderId, JFrame parentFrame, DefaultTableModel orderTableModel) {
+        JFrame modifyOrderFrame = new JFrame("Modify Order");
+        modifyOrderFrame.setSize(500, 400);
+        modifyOrderFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        modifyOrderFrame.setLocationRelativeTo(null);
+
+        List<Order> orderList = loadOrdersFromFile();
+        Order selectedOrder = orderList.stream()
+                .filter(order -> order.getOrderId().equals(orderId))
+                .findFirst()
+                .orElse(null);
+
+        if (selectedOrder == null) {
+            JOptionPane.showMessageDialog(modifyOrderFrame, "Order not found!");
+            modifyOrderFrame.dispose();
+            parentFrame.setVisible(true);
+            return;
+        }
+
+        // Main Panel
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+
+        // Order Details Section
+        JTextArea orderDetailsArea = new JTextArea(selectedOrder.toString());
+        orderDetailsArea.setEditable(false);
+        orderDetailsArea.setBorder(BorderFactory.createTitledBorder("Order Details"));
+
+        // Input Section for quantity
+        JPanel inputPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        JLabel quantityLabel = new JLabel("Quantity:");
+        JTextField quantityField = new JTextField(String.valueOf(selectedOrder.getQuantity()));
+        JButton updateButton = new JButton("Update Quantity");
+        JButton cancelButton = new JButton("Cancel Order");
         JButton backButton = new JButton("Back");
 
-        modifyButton.addActionListener(e -> {
-            String orderId = orderIdField.getText();
-            openModifyOrderDialog(orderId, viewOrderFrame);
+        inputPanel.add(quantityLabel);
+        inputPanel.add(quantityField);
+        inputPanel.add(updateButton);
+        inputPanel.add(cancelButton);
+
+        // Button Panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(backButton);
+
+        // Update Button Action
+        updateButton.addActionListener(e -> {
+            int newQuantity;
+            try {
+                newQuantity = Integer.parseInt(quantityField.getText().trim());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(modifyOrderFrame, "Please enter a valid quantity.");
+                return;
+            }
+
+            if (newQuantity <= 0) {
+                JOptionPane.showMessageDialog(modifyOrderFrame, "Quantity cannot be less than or equal to 0.");
+                return;
+            }
+
+            // Update the order in the list and file
+            selectedOrder.setQuantity(newQuantity);
+            saveOrdersToFile(orderList);
+
+            // Update the table in the parent frame
+            updateOrderTableModel(orderTableModel, orderList);
+
+            JOptionPane.showMessageDialog(modifyOrderFrame, "Order quantity updated successfully!");
+            modifyOrderFrame.dispose();
+            parentFrame.setVisible(true);
         });
 
-        trackButton.addActionListener(e -> {
-            String orderId = orderIdField.getText();
-            openTrackOrderDialog(orderId, viewOrderFrame);
+        // Cancel Button Action
+        cancelButton.addActionListener(e -> {
+            cancelOrder(orderId, orderList);
+            saveOrdersToFile(orderList);
+
+            // Update the table in the parent frame
+            updateOrderTableModel(orderTableModel, orderList);
+
+            JOptionPane.showMessageDialog(modifyOrderFrame, "Order canceled successfully!");
+            modifyOrderFrame.dispose();
+            parentFrame.setVisible(true);
         });
 
+        // Back Button Action
         backButton.addActionListener(e -> {
-            viewOrderFrame.dispose();
-            new customer(folderPath);
+            modifyOrderFrame.dispose();
+            parentFrame.setVisible(true);
         });
 
-        JPanel inputPanel = new JPanel(new GridLayout(2, 2, 10, 10));
-        inputPanel.add(orderIdLabel);
-        inputPanel.add(orderIdField);
-        inputPanel.add(modifyButton);
-        inputPanel.add(trackButton);
-
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(new JScrollPane(orderArea), BorderLayout.CENTER);
+        // Add Components to Main Panel
+        mainPanel.add(new JScrollPane(orderDetailsArea), BorderLayout.CENTER);
         mainPanel.add(inputPanel, BorderLayout.SOUTH);
-        mainPanel.add(backButton, BorderLayout.NORTH);
+        mainPanel.add(buttonPanel, BorderLayout.NORTH);
 
-        viewOrderFrame.add(mainPanel);
-        viewOrderFrame.setVisible(true);
+        modifyOrderFrame.add(mainPanel);
+        modifyOrderFrame.setVisible(true);
     }
 
-    private void openModifyOrderDialog(String orderId, JFrame parentFrame) {
-      JFrame modifyOrderFrame = new JFrame("Modify Order");
-      modifyOrderFrame.setSize(400, 300);
-      modifyOrderFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-      modifyOrderFrame.setLocationRelativeTo(null);
-
-      List<Order> orderList = loadOrdersFromFile();
-        Order selectedOrder = orderList.stream()
-            .filter(order -> order.getOrderId().startsWith(orderId))
-            .findFirst()
-            .orElse(null);
-
-      if (selectedOrder == null) {
-        JOptionPane.showMessageDialog(modifyOrderFrame, "Order not found!");
-        modifyOrderFrame.dispose();
-        parentFrame.setVisible(true);
-        return;
-      }
-
-      JTextArea orderDetailsArea = new JTextArea(selectedOrder.toString());
-      orderDetailsArea.setEditable(false);
-
-      JLabel quantityLabel = new JLabel("Quantity:");
-      JTextField quantityField = new JTextField(String.valueOf(selectedOrder.getQuantity()));
-
-      JButton updateButton = new JButton("Update Quantity");
-      JButton cancelButton = new JButton("Cancel Order");
-      JButton backButton = new JButton("Back");
-
-      updateButton.addActionListener(e -> {
-        int newQuantity;
-        try {
-          newQuantity = Integer.parseInt(quantityField.getText().trim());
-        } catch (NumberFormatException ex) {
-          JOptionPane.showMessageDialog(modifyOrderFrame, "Please enter a valid quantity.");
-          return;
-        }
-
-        if (newQuantity <= 0) {
-          JOptionPane.showMessageDialog(modifyOrderFrame, "Quantity cannot be less than or equal to 0.");
-          return;
-        }
-
-        // Update order in the list
-        selectedOrder.setQuantity(newQuantity);
-
-        // Update order file with modified list
-        saveOrdersToFile(orderList);
-
-        orderDetailsArea.setText(selectedOrder.toString());
-        JOptionPane.showMessageDialog(modifyOrderFrame, "Order quantity updated successfully!");
-      });
-
-      cancelButton.addActionListener(e -> {
-        cancelOrder(orderId, orderList);
-        modifyOrderFrame.dispose();
-        parentFrame.setVisible(true);
-      });
-
-      backButton.addActionListener(e -> {
-        modifyOrderFrame.dispose();
-        parentFrame.setVisible(true);
-      });
-
-      JPanel buttonPanel = new JPanel();
-      buttonPanel.add(updateButton);
-      buttonPanel.add(cancelButton);
-      buttonPanel.add(backButton);
-
-      JPanel panel = new JPanel(new BorderLayout());
-      panel.add(new JScrollPane(orderDetailsArea), BorderLayout.CENTER);
-      panel.add(quantityLabel, BorderLayout.WEST);
-      panel.add(quantityField, BorderLayout.EAST);
-      panel.add(buttonPanel, BorderLayout.SOUTH);
-
-      modifyOrderFrame.add(panel);
-      modifyOrderFrame.setVisible(true);
-    }
 
     private void openTrackOrderDialog(String orderId, JFrame parentFrame) {
         JFrame trackOrderFrame = new JFrame("Track Order");
@@ -363,6 +330,31 @@ public class CustomerInterface extends JFrame {
             e.printStackTrace();
         }
         return orders;
+    }
+    
+    private void updateOrderTableModel(DefaultTableModel orderTableModel, List<Order> orderList) {
+        List<Product> stockList = loadStockFromFile();
+
+        // Clear existing rows
+        orderTableModel.setRowCount(0);
+
+        // Add updated rows
+        for (Order order : orderList) {
+            String productId = order.getProductId();
+            String productName = stockList.stream()
+                                          .filter(p -> p.getId().equals(productId))
+                                          .map(Product::getName)
+                                          .findFirst()
+                                          .orElse("Unknown Product");
+
+            orderTableModel.addRow(new Object[]{
+                order.getOrderId(),
+                productId,
+                productName,
+                order.getQuantity(),
+                order.getTimestamp()
+            });
+        }
     }
 
     
