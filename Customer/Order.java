@@ -24,6 +24,10 @@ public class Order {
     public int getQuantity() {
         return quantity;
     }
+    
+    public void setQuantity(int newQuantity) {
+        this.quantity = newQuantity;
+    }
 
     public String getTimestamp() {
         return timestamp;
