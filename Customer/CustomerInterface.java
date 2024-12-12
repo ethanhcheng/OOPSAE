@@ -1,6 +1,7 @@
 package Customer;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.*;
 import java.time.LocalDateTime;
@@ -39,7 +40,6 @@ public class CustomerInterface extends JFrame {
         JTextArea stockArea = new JTextArea();
         stockArea.setEditable(false);
 
-        // Load stock and display only ID, Name, Quantity
         List<Product> stockList = loadStockFromFile();
         StringBuilder stockText = new StringBuilder("Available Products:\nID, Name, Quantity\n");
         for (Product product : stockList) {
@@ -69,7 +69,7 @@ public class CustomerInterface extends JFrame {
 
         backButton.addActionListener(e -> {
             createOrderFrame.dispose();
-            new customer(folderPath); // Replace with appropriate return behavior
+            new customer(folderPath);
         });
 
         submitButton.addActionListener(e -> {
@@ -83,7 +83,6 @@ public class CustomerInterface extends JFrame {
                 return;
             }
 
-            // Find product by ID
             Product product = stockList.stream()
                     .filter(p -> p.getId().equals(productId))
                     .findFirst()
@@ -109,27 +108,80 @@ public class CustomerInterface extends JFrame {
 
     private void openViewOrderDialog() {
         JFrame viewOrderFrame = new JFrame("View All Orders");
-        viewOrderFrame.setSize(600, 400);
+        viewOrderFrame.setSize(800, 600);
         viewOrderFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         viewOrderFrame.setLocationRelativeTo(null);
 
-        JTextArea orderArea = new JTextArea();
-        orderArea.setEditable(false);
+        String[] orderColumns = {"Order ID", "Product ID", "Product Name", "Quantity", "Order Date"};
 
-        StringBuilder orderText = new StringBuilder("Current Orders:\n");
-        // Check if the order file exists
-        if (!orderFile.exists()) {
-            orderText.append("No orders have been created yet.");
-        } else {
-            List<Order> orderList = loadOrdersFromFile();
-            if (orderList.isEmpty()) {
-                orderText.append("No orders have been created yet.");
-            } else {
-                for (Order order : orderList) {
-                    orderText.append(order).append("\n");
-                }
-            }
+        DefaultTableModel orderTableModel = new DefaultTableModel(orderColumns, 0);
+        JTable orderTable = new JTable(orderTableModel);
+
+        List<Order> orderList = loadOrdersFromFile();
+        List<Product> stockList = loadStockFromFile();
+        for (Order order : orderList) {
+            String productId = order.getProductId();
+            String productName = stockList.stream()
+                                          .filter(p -> p.getId().equals(productId))
+                                          .map(Product::getName)
+                                          .findFirst()
+                                          .orElse("Unknown Product");
+
+            orderTableModel.addRow(new Object[]{
+                order.getOrderId(),
+                productId,
+                productName,
+                order.getQuantity(),
+                order.getTimestamp()
+            });
         }
+
+        JScrollPane orderScrollPane = new JScrollPane(orderTable);
+        orderScrollPane.setBorder(BorderFactory.createTitledBorder("Order List"));
+
+        JPanel inputPanel = new JPanel(new GridLayout(1, 3, 10, 10));
+        JTextField orderIdField = new JTextField();
+        JButton modifyButton = new JButton("Modify Order");
+        JButton trackButton = new JButton("Track Order");
+
+        inputPanel.add(new JLabel("Order ID:"));
+        inputPanel.add(orderIdField);
+        inputPanel.add(modifyButton);
+        inputPanel.add(trackButton);
+
+        modifyButton.addActionListener(e -> {
+            String orderId = orderIdField.getText().trim();
+            if (orderId.isEmpty()) {
+                JOptionPane.showMessageDialog(viewOrderFrame, "Please enter a valid Order ID.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            openModifyOrderDialog(orderId, viewOrderFrame);
+        });
+
+        trackButton.addActionListener(e -> {
+            String orderId = orderIdField.getText().trim();
+            if (orderId.isEmpty()) {
+                JOptionPane.showMessageDialog(viewOrderFrame, "Please enter a valid Order ID.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            openTrackOrderDialog(orderId, viewOrderFrame);
+        });
+
+        JButton backButton = new JButton("Back");
+        backButton.addActionListener(e -> {
+            viewOrderFrame.dispose();
+            new customer(folderPath);
+        });
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(orderScrollPane, BorderLayout.CENTER);
+        mainPanel.add(inputPanel, BorderLayout.SOUTH);
+        mainPanel.add(backButton, BorderLayout.NORTH);
+
+        viewOrderFrame.add(mainPanel);
+        viewOrderFrame.setVisible(true);
+    }
+
         
         orderArea.setText(orderText.toString());
         orderArea.revalidate();
